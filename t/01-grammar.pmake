@@ -1,0 +1,8 @@
+# -*- makefile -*-
+
+foo: (5:00)
+	cat /etc/passwd
+
+bar: foo (10:00) [50]
+	sub{ print "bah!" }
+

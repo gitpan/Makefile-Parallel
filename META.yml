@@ -1,0 +1,22 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Makefile-Parallel
+version:      0.01
+version_from: lib/Makefile/Parallel.pm
+installdirs:  site
+requires:
+    Clone:                         0.2
+    Date::Parse:                   2.27
+    Digest::MD5:                   2.36
+    GraphViz:                      2.02
+    Log::Log4perl:                 1.07
+    Parse::Yapp:                   0
+    Proc::Reliable:                1.16
+    Proc::Simple:                  1.21
+    Test::More:                    0.63
+    Time::HiRes:                   1.97
+    Time::Interval:                1.2
+    Time::Piece::ISO:              0.1
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.30_01
