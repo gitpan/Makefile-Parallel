@@ -20,7 +20,9 @@ WriteMakefile(
                   'Time::Interval' => 1.2,
                   'Time::Piece::ISO' => 0.10,
                   'GraphViz' => 2.02,
-                  'Time::HiRes' => 1.97,
+                  'Time::HiRes' => 1.550,
+                  'Text::Balanced' => 0,
+
                   'Proc::Reliable' => 1.16,
                   'Digest::MD5' => 2.36,
     },

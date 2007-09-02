@@ -8,8 +8,7 @@ use Cwd;
 use Proc::Reliable;
 use Data::Dumper;
 use Time::Interval;
-
-sub launch {
+sub launch{
     my ($self, $job, $debug) = @_;
 
     my $me = `whoami`;
@@ -17,22 +16,36 @@ sub launch {
 
     # Create the PBS script
     open F, ">/tmp/$me#$job->{rule}{id}.sh";
-    print F "#!/bin/sh\n";
-
-    print F "#PBS -l walltime=$job->{walltime}\n";
 
     # Number of cpus
     $job->{cpus} ||= 1;
-    print F "#PBS -l nodes=1:ppn=$job->{cpus}\n";
 
-    print F "#\n";
-    print F "cd " . cwd() . "\n";
+    if    ($job->{action}[0]{shell}) {
+        print F "#!/bin/sh\n";
 
-    for my $prog (@{$job->{action}}) {
-        next unless $prog->{shell};
-        print F "$prog->{shell}\n";
+        print F "#PBS -l walltime=$job->{walltime}\n";
+        print F "#PBS -l nodes=1:ppn=$job->{cpus}\n";
+        print F "#\n";
+
+        print F "cd " . cwd() . "\n";
+        print F join("\n",map { $_->{shell}?$_->{shell}:() }  @{$job->{action} });
+        close F;
     }
-    close F;
+    elsif ($job->{action}[0]{perl}) {  
+        print F "#!/usr/bin/perl\n";
+
+        print F "#PBS -l walltime=$job->{walltime}\n";
+        print F "#PBS -l nodes=1:ppn=$job->{cpus}\n";
+        print F "#\n";
+
+        print F "chdir qq{" . cwd() . "};\n";
+        print F $job->{perl};
+        print F $job->{action}[0]{perl};
+        close F;
+    }
+    else {
+	die "Action type not supported.\n";
+    }
 
     # If we are in debug mode, copy the file to log dir
     `cp /tmp/$me#$job->{rule}{id}.sh log/$me#$job->{rule}{id}.sh` if $debug;
@@ -111,7 +124,7 @@ sub get_dead_job_info {
     my ($stdout, $stderr, $status, undef) = $proc->run("tracejob $job->{proc}");
     
     # Parse exit_status
-    if($stdout =~ /Exit_status\=(\d+)/m) {
+    if($stdout =~ /Exit_status\=(-?\d+)/m) {
         $job->{exitstatus} = $1;
     } 
 

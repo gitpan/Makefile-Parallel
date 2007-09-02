@@ -13,7 +13,7 @@ use Data::Dumper;
 
 use warnings;
 use strict;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 NAME
 
@@ -95,6 +95,7 @@ sub process_makefile {
     $options->{local}     ||= '1'; # Default CPU's on local mode
     $options->{dump}      ||= 0;
     $options->{clean}     ||= 0;
+    $options->{clock}     ||= 10;
     $options->{debug}     ||= 0;
     $options->{continue}  ||= 0;
     
@@ -150,6 +151,16 @@ sub process_makefile {
     else {       $logger->error("Parse failed, aborting..."); return }
     $filename = $file;
 
+    # Copy perl routines to perl actions
+    if(defined $queue->[-1]{perl}) {
+	for my $job (@{$queue}) {
+		if(defined $job->{action}[0]{perl}) {
+			$job->{perl} = $queue->[-1]{perl};
+		}
+	}
+	delete $queue->[-1];
+    }
+
     # Dump if the user want it
     die Dumper $queue if($options->{dump});
 
@@ -164,7 +175,7 @@ sub process_makefile {
         # $logger->debug("New loop starting");
         loop();
         # $logger->debug("Loop processed, sleeping");
-        sleep 10;
+        sleep $options->{clock};
     }
 }
 
@@ -336,20 +347,44 @@ sub find_and_run_asPerl {
         if($action->{asPerl} && !(defined $finnished->{__var__}->{$action->{def}})) {
             $logger->info("Running perl action $action->{asPerl}");
             $finnished->{__var__}->{$action->{def}} = [];
-
-            open P, "perl -e '$action->{asPerl}' |";
-            while(<P>) {
-                chomp;
-                $logger->warn("Return value from the perl action is not a integer") unless /^\d+$/;
-                push @{$finnished->{__var__}->{$action->{def}}}, $_;
-            }
-            close P;
-            # $finnished->{__var__}->{$action->{def}} = eval { $action->{asPerl} };
+            $finnished->{__var__}{$action->{def}} = paction_list($action->{asPerl});
 
             # Now expand the queue
             expand_forks($action->{def});
         }
     }
+}
+            
+=head1 paction_list
+
+this function evaluates a perl action and retruns a list of strings.
+the action can: 
+
+ .return a ARRAY reference, 
+ .print a list of lines to STDOUT (to be splited end chomped)
+ .or return a string (to be splited and chomped)
+
+=cut
+
+sub paction_list{
+  my $act=shift;
+  my $var="";
+  my $final=[];
+  open(A,'>', \$var);
+  my $old= select A;
+  my $res = eval( "package main; no strict; " . $act );
+  die $@ if $@;
+  close A;
+  select $old;
+
+  if   (ref($res) eq "ARRAY"){ 
+      $final = $res; }
+  elsif($var =~ /\S/) {
+      for(split("\n",$var)){ push (@$final, $_) if /\S/; } }
+  else{
+      for(split("\n",$res)){ push (@$final, $_) if /\S/; } }
+
+  $final;
 }
 
 =head1 expand_forks
@@ -385,9 +420,13 @@ sub expand_forks {
                $newjob->{rule}->{id} .= $index;
 
                # Actualizar a linha a executar
-               for my $shell (@{$newjob->{action}}) {
-                   next unless $shell->{shell};
-                   $shell->{shell} =~ s/\$$var/$index/g;
+               for my $act (@{$newjob->{action}}) {
+                   if($act->{shell}){
+                     $act->{shell} =~ s/\$$var\b/$index/g;
+                   }
+                   elsif($act->{perl}){
+                     $act->{perl} =~ s/\$$var\b/$index/g;
+                   }
                }
 
                # Expand pipelines
@@ -428,32 +467,37 @@ sub expand_forks {
 
         # Search on actions
         for my $action (@{$job->{action}}) {
-            if($action->{shell} && $action->{shell} =~ /\@$var/) {
+            if($action->{shell} && $action->{shell} =~ /\@$var\b/) {
                 my $string = '';
                 map { $string .= "$_ " } @{$values};
-                $action->{shell} =~ s/\@$var/$string/g;
+                $action->{shell} =~ s/\@$var\b/$string/g;
                 $logger->info("The job $job->{rule}->{id} has been action expanded with $string");
+            }
+            elsif($action->{perl} && $action->{perl} =~ /\@$var\b/) {
+                my $string = join(",", map { "q{$_}" } @{$values});
+                $action->{perl} =~ s/\@$var\b/($string)/g;
+                $logger->info("The job $job->{rule}->{id} has been action expanded with ($string)");
             }
         }
 
         # Search on asShell
         for my $action (@{$job->{action}}) {
-            if($action->{asShell} && $action->{asShell} =~ /\@$var/) {
+            if($action->{asShell} && $action->{asShell} =~ /\@$var\b/) {
                 my $string = '';
                 map { $string .= "$_ " } @{$values};
-                $action->{asShell} =~ s/\@$var/$string/g;
+                $action->{asShell} =~ s/\@$var\b/$string/g;
                 $logger->info("The job $job->{rule}->{id} has been shell expanded with $string");
             }
         }
 
         # Search on asPerl
         for my $action (@{$job->{action}}) {
-            if($action->{asPerl} && $action->{asPerl} =~ /\@$var/) {
+            if($action->{asPerl} && $action->{asPerl} =~ /\@$var\b/) {
                 my $string = 'qw/';
                 map { $string .= "$_ " } @{$values};
                 $string .= "/";
 
-                $action->{asPerl} =~ s/\@$var/$string/g;
+                $action->{asPerl} =~ s/\@$var\b/$string/g;
                 $logger->info("The job $job->{rule}->{id} has been Perl expanded with $string");
             }
         }
@@ -467,19 +511,14 @@ Print a pretty report bla bla bla
 =cut
 
 sub report {
-    print "\n";
-    my ($id, $start, $stop, $interval);
 
-    format STDOUT =
-@<<<<<<<<<< @<<<<<<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<
-$id, $start, $stop, $interval
-.
+    $logger->info("Creating HTML report");
+    open REPORT, ">$filename.html" or die "Can't create $filename.html";
 
-    format STDOUT_TOP =
-@<<<<<<<<<< @<<<<<<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<< @<<<<<<<<<<<<<<<<<<<<<<<<<<
-"ID",         "Start Time",              "End Time",               "Elapsed"
-.
+    print REPORT "<table>\n";
+    print REPORT "<tr><td>ID</td><td>Start Time</td><td>End Time</td><td>Elapsed</td></tr>\n";
 
+    my ($id,$start,$stop,$interval);
     for my $job (sort sortcallback keys %{$finnished}) {
        next unless $finnished->{$job}{rule};
 
@@ -487,8 +526,11 @@ $id, $start, $stop, $interval
        $start    = (localtime($finnished->{$job}{starttime}[0]))->iso;
        $stop     = (localtime($finnished->{$job}{stoptime}[0]))->iso;
        $interval = $finnished->{$job}{realtime} || $finnished->{$job}{elapsed};
-       write;
+       print REPORT "<tr><td>$id</td><td>$start</td><td>$stop</td><td>$interval</td></tr>\n";
     }
+
+    print REPORT "</table>\n";
+    close REPORT;
 }
 
 sub sortcallback {
@@ -526,7 +568,7 @@ sub dispatch {
         # Find if the job dependencies are finnished
         if(can_run_job($job->{rule}->{id}, $job->{depend_on})) {
 
-            $logger->info(Dump($job)) unless $job->{rule}{id};
+            $logger->info(Dumper($job)) unless $job->{rule}{id};
 
             $logger->info("The job \"" . $job->{rule}->{id} . "\" is ready to run. Launching");
             launch($job);
@@ -634,6 +676,7 @@ sub can_run_job {
 
     for my $dep (@{$deps}) {
         next unless $dep;
+        next unless $dep->{id};
         return 0 unless defined $finnished->{$dep->{id}}
     }
     

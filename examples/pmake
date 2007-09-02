@@ -2,9 +2,9 @@
 
 use Makefile::Parallel;
 
-our ($pbs, $dump, $clean, $debug, $local, $continue);
+our ($clock, $pbs, $dump, $clean, $debug, $local, $continue);
 
-die "You cannot use both pbs and local sub-systems..." if ($pbs && $local);
+die "You cannot use both pbs and local sub-systems...\n" if ($pbs && $local);
 
 my $makefile = shift or die usage();
 
@@ -13,6 +13,7 @@ process_makefile($makefile,
         scheduler => $pbs ? 'PBS' : 'LOCAL',
         local     => $local,
         dump      => $dump,
+        clock     => $clock,
         clean     => $clean,
         debug     => $debug,
         continue  => $continue,
@@ -28,9 +29,17 @@ pmake Usage:
 EOF
 }
 
-=head1
+=head1 NAME
 
-Welcome to the pmake scheduler. This program reads a textual specification
+pmake - Makefile-Paralell  Scheduler
+
+=head1 SYNOPSIS
+
+ pmake [options] file.pmake
+
+=head1 DESCRIPTION
+
+The pmake scheduler program reads a textual specification
 of a PMakefile and schedules it to a sub-system.
 
 The basic syntax of this program is:
@@ -47,7 +56,7 @@ and end date-time, and the elapsed time on a human readable string.
 Is also generates a makefile's dependecy graph representation for easly see
 how the jobs relate to each other and how much time did they take to run.
 
-pmake accepts the following options:
+=head1 Options
 
 =head2 debug
 

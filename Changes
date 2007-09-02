@@ -1,5 +1,9 @@
 Revision history for Makefile-Parallel
 
+0.02    02-09-2007/16:15
+        A bunch of new features, including constants, embedded Perl or Bash code
+        on the Makefiles, bugfixes and probably new bugs too :-)
+
 0.01    Date/time
         First version, released on an unsuspecting world.
 
