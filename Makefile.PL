@@ -12,7 +12,7 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
                   'Test::More' => 0.63,
-                  'Parse::Yapp' => 0,
+                  'Parse::Yapp::Driver' => 1.05,
                   'Clone'      => 0.20,
                   'Proc::Simple' => 1.21,
                   'Log::Log4perl' => 1.07,
@@ -21,8 +21,7 @@ WriteMakefile(
                   'Time::Piece::ISO' => 0.10,
                   'GraphViz' => 2.02,
                   'Time::HiRes' => 1.550,
-                  'Text::Balanced' => 0,
-
+                  'Text::Balanced' => 2.00,
                   'Proc::Reliable' => 1.16,
                   'Digest::MD5' => 2.36,
     },
