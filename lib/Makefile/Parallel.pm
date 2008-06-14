@@ -13,17 +13,11 @@ use Data::Dumper;
 
 use warnings;
 use strict;
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 NAME
 
 Makefile::Parallel - A distributed parallel makefile
-
-=head1 VERSION
-
-Version 0.01
-
-=cut
 
 =head1 SYNOPSIS
 
@@ -404,11 +398,11 @@ sub expand_forks {
     for my $job (@{$queue}) {
         next unless $job;
 
-        if($job->{rule}->{var} && ($job->{rule}->{var} eq "\$$var")) {
+        if($job->{rule}{vars} && (grep { $_ eq "\$$var" } @{$job->{rule}{vars}} )) {
             $logger->info("Found a fork on $job->{rule}->{id}. Expanding...");
 
             # Expand, expand, expand
-            delete $job->{rule}->{var};
+			$job->{rule}{vars} = [grep { $_ ne "\$$var" }@{$job->{rule}{vars}}];
             delete $queue->[$index];
 
             my $count = 0;
@@ -431,9 +425,9 @@ sub expand_forks {
 
                # Expand pipelines
                for my $dep (@{$newjob->{depend_on}}) {
-                   if($dep->{var} && ($dep->{var} eq "\$$var")) {
+                   if($dep->{vars} && (grep { $_ eq "\$$var"} @{$dep->{vars}} )) {
                       # Expand the dependencie
-                      delete $dep->{var};
+					  $dep->{vars} = [grep { $_ ne "\$$var" }@{$dep->{vars}}];
                       $dep->{id} .= $index;
                    }
                }
@@ -447,7 +441,7 @@ sub expand_forks {
         # Find joiners
         my $pos = 0;
         for my $dep (@{$job->{depend_on}}) {
-            if($dep->{var} && ($dep->{var} eq "\$$var")) {
+            if($dep->{vars} && (grep { $_ eq "\$$var" } @{$dep->{vars}} )) {
                # Expand the dependencies
                delete $job->{depend_on}->[$pos];
                for my $index (@{$values}) {

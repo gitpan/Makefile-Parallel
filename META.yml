@@ -1,14 +1,14 @@
 --- #YAML:1.0
 name:                Makefile-Parallel
-version:             0.03
+version:             0.04
 abstract:            A distributed parallel makefile
 license:             ~
 author:              
     - Ruben Fonseca <root@cpan.org>
-generated_by:        ExtUtils::MakeMaker version 6.42
+generated_by:        ExtUtils::MakeMaker version 6.43_01
 distribution_type:   module
 requires:     
-    Clone:                         0.2
+    Clone:                         0.20
     Date::Parse:                   2.27
     Digest::MD5:                   2.36
     GraphViz:                      2.02
@@ -17,10 +17,10 @@ requires:
     Proc::Reliable:                1.16
     Proc::Simple:                  1.21
     Test::More:                    0.63
-    Text::Balanced:                2
-    Time::HiRes:                   1.55
+    Text::Balanced:                2.0.0
+    Time::HiRes:                   1.550
     Time::Interval:                1.2
-    Time::Piece::ISO:              0.1
+    Time::Piece::ISO:              0.10
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html
     version: 1.3

@@ -107,7 +107,7 @@ sub clean {
         my $id = $job->{rule}->{id};
 
         # If there are expands, expand it in the lazy way :D
-        $id .= '*' if($job->{rule}->{var});
+        $id .= '*' if($job->{rule}{vars});
 
         # Remove the remporary files
         `rm -f $me#$id.sh.o*`;

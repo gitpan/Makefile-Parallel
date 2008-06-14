@@ -1,10 +1,13 @@
 Revision history for Makefile-Parallel
 
-0.03    27-12-2007/09:49
-        Small correction on Makefile.PL to try to kill CPAN test errors.
+0.04	14-06-2008
+	- support multiple variables for parametric rules
+
+0.03    27-12-2007
+	- Changelog lost
 
 0.02    02-09-2007/16:15
-        A bunch of new features, including constants, embedded Perl or Bash code
+        - A bunch of new features, including constants, embedded Perl or Bash code
         on the Makefiles, bugfixes and probably new bugs too :-)
 
 0.01    Date/time

@@ -11,11 +11,11 @@ tarefas    : tarefa tarefas   { +[ $_[1], @{$_[2]} ] }
 
 tarefa     : nome ':' dependencias '(' tempo ')' nrcpus comandos {
                 +{
-		  rule => $_[1],
-                  depend_on => $_[3],
-		  walltime => $_[5],
-                  action => $_[8],
-		  cpus => $_[7],
+					rule => $_[1],
+					depend_on => $_[3],
+ 					walltime => $_[5],
+					action => $_[8],
+					cpus => $_[7],
                 }
            }
            ;
@@ -25,7 +25,11 @@ nrcpus     : '[' NR ']' { return $_[2] }
            ;
 
 nome       : ID       { +{ id => $_[1] } }
-           | ID VAR   { +{ id => $_[1], var => $_[2] } }
+           | ID vars  { +{ id => $_[1], vars => $_[2] } }
+           ;
+
+vars       : VAR vars  { +[ $_[1], @{$_[2]} ] }
+           |           { +[] }
            ;
 
 dependencias: nome dependencias { +[ $_[1], @{$_[2]} ] }
