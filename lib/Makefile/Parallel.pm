@@ -13,9 +13,11 @@ use Data::Dumper;
 
 use warnings;
 use strict;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 NAME
+
+=encoding utf8
 
 Makefile::Parallel - A distributed parallel makefile
 
@@ -28,6 +30,10 @@ the pmake program on the /examples directory of this distribution.
 
 Ruben Fonseca, C<< <root@cpan.org> >>
 
+Alberto Simões C<< <ambs@cpan.org> >>
+
+José João Almeida C<< <jj@di.uminho.pt> >>
+
 =head1 BUGS
 
 Please report any bugs or feature requests to
@@ -36,14 +42,9 @@ L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Makefile-Parallel>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
 
-=head1 ACKNOWLEDGEMENTS
-
-Thank you Alberto Simões and José João for the excelent work you've done
-with me on this project.
-
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 Ruben Fonseca, all rights reserved.
+Copyright 2006-2008 Ruben Fonseca, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
@@ -394,24 +395,28 @@ sub expand_forks {
     my $values = $finnished->{__var__}->{$var};
 
     # For all queue items that has a $var, expand
-    my $index = 0;
+    my $index = -1;
     for my $job (@{$queue}) {
-        next unless $job;
+		$index++;
+		next unless $job;
 
         if($job->{rule}{vars} && (grep { $_ eq "\$$var" } @{$job->{rule}{vars}} )) {
             $logger->info("Found a fork on $job->{rule}->{id}. Expanding...");
 
             # Expand, expand, expand
-			$job->{rule}{vars} = [grep { $_ ne "\$$var" }@{$job->{rule}{vars}}];
-            delete $queue->[$index];
+			$job->{rule}{vars} = [ grep { $_ ne "\$$var" } @{$job->{rule}{vars} }];	
+			delete $job->{rule}{vars} unless scalar @{$job->{rule}{vars}};
+			
+			delete $queue->[$index];
 
             my $count = 0;
+			my @added_jobs = ();
             for my $index (@{$values}) {
                my $newjob = clone($job);
                $count++;
 
                # Actualiazr o id
-               $newjob->{rule}->{id} .= $index;
+               $newjob->{rule}{id} .= $index;
 
                # Actualizar a linha a executar
                for my $act (@{$newjob->{action}}) {
@@ -425,34 +430,31 @@ sub expand_forks {
 
                # Expand pipelines
                for my $dep (@{$newjob->{depend_on}}) {
-                   if($dep->{vars} && (grep { $_ eq "\$$var"} @{$dep->{vars}} )) {
+                   if ($dep->{vars} && (grep { $_ eq "\$$var"} @{$dep->{vars}} )) {
                       # Expand the dependencie
-					  $dep->{vars} = [grep { $_ ne "\$$var" }@{$dep->{vars}}];
+					  $dep->{vars} = [ grep { $_ ne "\$$var" } @{$dep->{vars}} ];
+					  delete $dep->{vars} unless scalar @{$dep->{vars}};
                       $dep->{id} .= $index;
                    }
                }
-
                push @{$queue}, $newjob;
+			   push @added_jobs, $newjob->{rule}{id};
             } 
-       
-            $logger->info("Expanded.. Created new $count jobs...");
+            $logger->info("Expanded.. Created new $count jobs: @added_jobs");
         }
 
         # Find joiners
         my $pos = 0;
         for my $dep (@{$job->{depend_on}}) {
-            if($dep->{vars} && (grep { $_ eq "\$$var" } @{$dep->{vars}} )) {
+            if ($dep->{vars} && (grep { $_ eq "\$$var" } @{$dep->{vars}} )) {
                # Expand the dependencies
                delete $job->{depend_on}->[$pos];
                for my $index (@{$values}) {
                     push @{$job->{depend_on}}, { id => $dep->{id} . $index }; 
                }
             }
-
             $pos++;
         }
-
-        $index++;
     }
 
     # Now find constructors like @var

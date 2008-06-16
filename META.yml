@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Makefile-Parallel
-version:             0.04
+version:             0.05
 abstract:            A distributed parallel makefile
 license:             ~
 author:              

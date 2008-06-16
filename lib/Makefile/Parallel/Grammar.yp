@@ -28,8 +28,8 @@ nome       : ID       { +{ id => $_[1] } }
            | ID vars  { +{ id => $_[1], vars => $_[2] } }
            ;
 
-vars       : VAR vars  { +[ $_[1], @{$_[2]} ] }
-           |           { +[] }
+vars       : VAR '.' vars  { +[ $_[1], @{$_[3]} ] }
+           | VAR           { +[ $_[1] ] }
            ;
 
 dependencias: nome dependencias { +[ $_[1], @{$_[2]} ] }
@@ -122,7 +122,7 @@ sub yylex{
     s!^(\$[a-zA-Z])!!                  and return ("VAR", $1);
     s!^((\d+:)+\d+)!!                  and return ("TIME", $1);
     s!^(\d+)!!                         and return ("NR", $1);
-    s!^([\[\]:\(\)])!!                 and return ($1, $1);
+    s!^([\[\]:\(\)\.])!!               and return ($1, $1);
 
     # UGLY but works for now
     ###s!^\t([A-Za-z])\s*<-\s*sub\{\s*([^\n]+)\s*\}!!  and return ("ATRIBPRL", +{def=>$1,asPerl=>$2});

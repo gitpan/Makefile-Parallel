@@ -1,5 +1,8 @@
 Revision history for Makefile-Parallel
 
+0.05    16-06-2008
+	- fixed bug when using more than one variable on a pmakefile.
+
 0.04	14-06-2008
 	- support multiple variables for parametric rules
 
