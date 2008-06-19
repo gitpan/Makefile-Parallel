@@ -13,7 +13,7 @@ use Data::Dumper;
 
 use warnings;
 use strict;
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 NAME
 
@@ -447,10 +447,15 @@ sub expand_forks {
         my $pos = 0;
         for my $dep (@{$job->{depend_on}}) {
             if ($dep->{vars} && (grep { $_ eq "\$$var" } @{$dep->{vars}} )) {
+	
+			   $dep->{vars} = [ grep { $_ ne "\$$var" } @{$dep->{vars}}];
+	
                # Expand the dependencies
                delete $job->{depend_on}->[$pos];
                for my $index (@{$values}) {
-                    push @{$job->{depend_on}}, { id => $dep->{id} . $index }; 
+				    my @vars = (scalar @{$dep->{vars}})?(vars => $dep->{vars}):();
+                    push @{$job->{depend_on}}, { @vars, 
+                                                 id => $dep->{id} . $index }; 
                }
             }
             $pos++;
