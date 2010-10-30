@@ -64,6 +64,11 @@ sub launch{
 sub poll {
     my ($self, $job, $logger) = @_;
 
+    # I do not have any idea how we can have a job running without
+    # this proc information, but the truth is that that is
+    # happening :-S
+	return 0 unless $job->{proc};
+
     my $me = `whoami`;
     chomp($me);
 

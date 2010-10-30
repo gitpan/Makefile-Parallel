@@ -31,6 +31,9 @@ WriteMakefile(
 );
 
 
+die "YAPP is not in your path (or not working)\n" unless -f 'lib/Makefile/Parallel/Grammar.pm';
+
+
 sub MY::postamble {
   "
 lib/Makefile/Parallel/Grammar.pm: lib/Makefile/Parallel/Grammar.yp
