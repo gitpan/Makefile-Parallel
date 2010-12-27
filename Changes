@@ -1,5 +1,11 @@
 Revision history for Makefile-Parallel
 
+0.08    27-12-2010
+        - added option to pmake to send an email when finishing each
+          task (for PBS systems). Might be adapted later for sending
+          only one e-mail when finishing the full makefile and/or in
+          case of error.
+
 0.07    30-10-2010
         - trying to guess what's going wrong with some CPAN Testers reports.
 

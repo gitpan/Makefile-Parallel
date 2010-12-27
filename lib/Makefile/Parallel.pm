@@ -13,7 +13,7 @@ use Data::Dumper;
 
 use warnings;
 use strict;
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 =head1 NAME
 
@@ -25,29 +25,6 @@ Makefile::Parallel - A distributed parallel makefile
 
 This module should not be called directly. Please see the perldoc of
 the pmake program on the /examples directory of this distribution.
-
-=head1 AUTHOR
-
-Ruben Fonseca, C<< <root@cpan.org> >>
-
-Alberto Simões C<< <ambs@cpan.org> >>
-
-José João Almeida C<< <jj@di.uminho.pt> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to
-C<bug-makefile-parallel@rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Makefile-Parallel>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
-
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2006-2008 Ruben Fonseca, all rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
 
 =cut
 
@@ -93,11 +70,12 @@ sub process_makefile {
     $options->{clock}     ||= 10;
     $options->{debug}     ||= 0;
     $options->{continue}  ||= 0;
-    
+
     # TODO: Give more flexibility
     if($options->{scheduler} eq 'PBS') {
         use Makefile::Parallel::Scheduler::PBS;
         $scheduler = Makefile::Parallel::Scheduler::PBS->new();
+        $scheduler->{mail} = $options->{mail} if $options->{mail};
     } else {
         use Makefile::Parallel::Scheduler::Local;
         $scheduler = Makefile::Parallel::Scheduler::Local->new({ max => $options->{local} });
@@ -105,8 +83,8 @@ sub process_makefile {
 
     # Debug settings
     if($options->{debug}) { 
-        # Clean logs...
-        `rm -rf log/`; mkdir "log"; 
+        # Clean logs... ## FIXME - do not rely on OS.
+        `rm -rf log/`; mkdir "log";
 
         my $conf = q(
             log4perl.category.PMake = DEBUG, Logfile, Screen
@@ -123,8 +101,8 @@ sub process_makefile {
         );
         Log::Log4perl::init(\$conf);
         $debug = 1;
-    } 
-    else { 
+    }
+    else {
         my $conf = q(
             log4perl.category.PMake = INFO, Screen
 
@@ -191,7 +169,7 @@ sub journal_recover {
     # Restore the finnished list
     $finnished = $journal->{finnished};
     $counter   = $journal->{counter};
-    
+
     # Ignore jobs already concluded
     # 1a passagem - cálculo das variáveis
     for my $job (@{$queue}) {
@@ -203,7 +181,7 @@ sub journal_recover {
         find_and_run_asPerl($job->{rule}{id});
       }
     }
-    
+
     # 2a passagem - remoção dos já executados
     my $new_queue = [];
     for my $job (@{$queue}) {
@@ -211,7 +189,7 @@ sub journal_recover {
       push @{$new_queue}, $job unless is_finnished($job->{rule}{id});
     }
     $queue = $new_queue;
-    
+
     $logger->warn("Journal recovered.. Cross your fingers now..."); 
 }
 
@@ -349,7 +327,7 @@ sub find_and_run_asPerl {
         }
     }
 }
-            
+
 =head1 paction_list
 
 this function evaluates a perl action and retruns a list of strings.
@@ -596,13 +574,10 @@ the finnished list.
 
 sub is_finnished {
   my ($jobid) = @_;
-  
   for my $job (keys %{$finnished}) {
     next unless $finnished->{$job}{rule};
-    
     return 1 if($finnished->{$job}{rule}{id} eq $jobid);
   }
-  
   return 0;
 }
 
@@ -640,7 +615,7 @@ sub write_journal {
         }
     }
     delete $acabados->{__var__};
-    
+
     $journal->{finnished} = $acabados;
     $journal->{counter}   = $counter;
 
@@ -680,8 +655,8 @@ sub can_run_job {
         next unless $dep->{id};
         return 0 unless defined $finnished->{$dep->{id}}
     }
-    
-    return 1; 
+
+    return 1;
 }
 
 =head1 launch
@@ -723,8 +698,8 @@ sub graphviz {
 
         my $color = 'black';
         $color = 'red' if $finnished->{$job}{fatal};
-        $color = 'yellow' if $finnished->{$job}{interrupted};       
- 
+        $color = 'yellow' if $finnished->{$job}{interrupted};
+
         $g->add_node($id, label => "$id\n$time_for->{$id}"
                         , shape => 'box', color => $color);
     }
@@ -736,7 +711,7 @@ sub graphviz {
 
         for my $dep (@{$finnished->{$job}{depend_on}}) {
             next unless $dep;
-            
+
             $g->add_edge($dep->{id}, $finnished->{$job}{rule}{id});
         }
     }
@@ -768,16 +743,16 @@ sub process_interrupt {
             $logger->warn("Interrupt pressed, enter QUIT to quit, other thing to continue");
             my $linha = <STDIN>;
             chomp($linha);
-           
+
             if($linha ne 'QUIT') {
                 $logger->info("Interrupt canceled... Keeping the loop");
                 return;
-            } 
+            }
         }
-        
+
         $interrupted = 1;
         $logger->info("Interrupt pressed, cleaning all the running processes");
-    
+
         for my $runid (keys %{$running}) {
             $logger->info("Terminating job " . $scheduler->get_id($running->{$runid}));
             $running->{$runid}{interrupted} = 1;
@@ -787,5 +762,31 @@ sub process_interrupt {
       $logger->warn("Interrupt already called, please wait while cleaning");
    }
 }
+
+
+=head1 AUTHOR
+
+Ruben Fonseca, C<< <root@cpan.org> >>
+
+Alberto Simões C<< <ambs@cpan.org> >>
+
+José João Almeida C<< <jj@di.uminho.pt> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-makefile-parallel@rt.cpan.org>, or through the web interface at
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Makefile-Parallel>.
+I will be notified, and then you'll automatically be notified of progress on
+your bug as I make changes.
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2006-2011 Ruben Fonseca, et al, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
 
 1; # End of Makefile::Parallel

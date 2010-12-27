@@ -2,9 +2,10 @@
 
 use Makefile::Parallel;
 
-our ($clock, $pbs, $dump, $clean, $debug, $local, $continue);
+our ($clock, $pbs, $dump, $clean, $debug, $local, $continue, $mail);
 
 die "You cannot use both pbs and local sub-systems...\n" if ($pbs && $local);
+die "Mail can be used only with pbs...\n" if $mail && !$pbs;
 
 my $makefile = shift or die usage();
 
@@ -17,6 +18,7 @@ process_makefile($makefile,
         clean     => $clean,
         debug     => $debug,
         continue  => $continue,
+        $mail ? (mail => $mail) : (),
     }
 );
 

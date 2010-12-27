@@ -20,3 +20,5 @@ examples/PMakefile.sequencial
 examples/PMakefile.pipeline
 examples/PMakefile.forks
 examples/PMakefile.dot
+t/02-grammar.pmake
+t/02-parser.t

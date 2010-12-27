@@ -20,8 +20,12 @@ sub launch{
     # Number of cpus
     $job->{cpus} ||= 1;
 
-    if    ($job->{action}[0]{shell}) {
+    if ($job->{action}[0]{shell}) {
         print F "#!/bin/sh\n";
+
+        if ($self->{mail}) {
+            print F "#PBS -m e -M $self->{mail}\n";
+        }
 
         print F "#PBS -l walltime=$job->{walltime}\n";
         print F "#PBS -l nodes=1:ppn=$job->{cpus}\n";

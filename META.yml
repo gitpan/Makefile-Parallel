@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Makefile-Parallel
-version:            0.07
+version:            0.08
 abstract:           A distributed parallel makefile
 author:
     - Ruben Fonseca <root@cpan.org>
